@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { signIn } from '$lib/auth/auth-client.js';
+  import { signIn, signOut } from '$lib/auth/auth-client.js';
   import { Button } from '$lib/components/ui/button/index.js';
+  import StartDebateForm from '$lib/components/start-debate-form.svelte';
   import MessageSquareIcon from '@lucide/svelte/icons/message-square';
   import ZapIcon from '@lucide/svelte/icons/zap';
 
@@ -22,7 +23,7 @@
         <p
           class="mx-auto max-w-2xl text-lg leading-relaxed text-muted-foreground md:text-xl"
         >
-          Watch AI models debate any topic you choose. Get comprehensive
+          Watch AI models debate on any topic you choose. Get comprehensive
           arguments from both sides and discover new perspectives.
         </p>
       </div>
@@ -90,5 +91,5 @@
     </div>
   </div>
 {:else}
-  <p>yo!!</p>
+  <StartDebateForm />
 {/if}
