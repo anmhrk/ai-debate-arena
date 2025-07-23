@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { signIn, signOut } from '$lib/auth/auth-client.js';
+  import { signIn } from '$lib/auth/auth-client.js';
   import { Button } from '$lib/components/ui/button/index.js';
   import StartDebateForm from '$lib/components/start-debate-form.svelte';
   import MessageSquareIcon from '@lucide/svelte/icons/message-square';
