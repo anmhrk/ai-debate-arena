@@ -1,4 +1,3 @@
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -18,6 +17,7 @@ model User {
   updatedAt     DateTime
   sessions      Session[]
   accounts      Account[]
+  debates       Debate[]
 
   @@unique([email])
   @@map("user")
@@ -66,4 +66,31 @@ model Verification {
   updatedAt  DateTime?
 
   @@map("verification")
+}
+
+model Debate {
+  id           String          @id
+  createdAt    DateTime
+  updatedAt    DateTime
+  prompt       String
+  forLlmId     String
+  againstLlmId String
+  status       String
+  round        Int             @default(0)
+  userId       String
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages     DebateMessage[]
+
+  @@map("debate")
+}
+
+model DebateMessage {
+  id        String   @id
+  createdAt DateTime
+  content   String
+  modelId   String
+  debateId  String
+  debate    Debate   @relation(fields: [debateId], references: [id], onDelete: Cascade)
+
+  @@map("debate_message")
 }

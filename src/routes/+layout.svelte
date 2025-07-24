@@ -9,6 +9,7 @@
   import { Button } from '$lib/components/ui/button/index.js';
   import { signOut } from '$lib/auth/auth-client.js';
   import { invalidateAll } from '$app/navigation';
+  import { Toaster } from '$lib/components/ui/sonner/index.js';
 
   let { children, data } = $props();
 </script>
@@ -19,6 +20,8 @@
 </svelte:head>
 
 <ModeWatcher defaultMode={'system'} />
+
+<Toaster />
 
 <div class="flex min-h-screen flex-col">
   <header class="flex w-full justify-end p-4">
