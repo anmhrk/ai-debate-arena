@@ -27,12 +27,6 @@ export const actions: Actions = {
     const forLlm = data.get('forLlm') as string;
     const againstLlm = data.get('againstLlm') as string;
 
-    if (!prompt?.trim()) {
-      return fail(400, {
-        error: 'Prompt is required'
-      });
-    }
-
     const debateId = nanoid();
 
     try {

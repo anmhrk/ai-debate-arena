@@ -74,7 +74,13 @@
       <form
         method="POST"
         use:enhance={() => {
+          if (!prompt.trim()) {
+            toast.error('Prompt is required');
+            return;
+          }
+
           loading = true;
+
           return async ({ result, update }) => {
             loading = false;
 
