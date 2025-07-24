@@ -5,34 +5,7 @@
   import ShuffleIcon from '@lucide/svelte/icons/shuffle';
   import { enhance } from '$app/forms';
   import { toast } from 'svelte-sonner';
-
-  // https://console.groq.com/docs/models
-  const llmOptions = [
-    {
-      label: 'Kimi K2',
-      value: 'moonshotai/kimi-k2-instruct'
-    },
-    {
-      label: 'Llama 4 Maverick',
-      value: 'meta-llama/llama-4-maverick-17b-128e-instruct'
-    },
-    {
-      label: 'Llama 4 Scout',
-      value: 'meta-llama/llama-4-scout-17b-16e-instruct'
-    },
-    {
-      label: 'Llama 3.3 70B',
-      value: 'llama-3.3-70b-versatile'
-    },
-    {
-      label: 'DeepSeek R1 Llama Distilled',
-      value: 'deepseek-r1-distill-llama-70b'
-    },
-    {
-      label: 'Qwen 3 32B',
-      value: 'qwen/qwen3-32b'
-    }
-  ];
+  import { llmOptions } from '$lib/models.js';
 
   let prompt = $state('');
   let forLlmValue = $state(llmOptions[0].value);

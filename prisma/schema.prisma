@@ -72,6 +72,7 @@ model Debate {
   id           String          @id
   createdAt    DateTime
   updatedAt    DateTime
+  title        String
   prompt       String
   forLlmId     String
   againstLlmId String
