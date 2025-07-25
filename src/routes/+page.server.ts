@@ -43,7 +43,7 @@ export const actions: Actions = {
 
     try {
       const response = await groq.chat.completions.create({
-        model: 'llama-3.3-70b-versatile',
+        model: 'meta-llama/llama-4-maverick-17b-128e-instruct',
         messages: [
           {
             role: 'system',
@@ -100,11 +100,8 @@ export const actions: Actions = {
           prompt: prompt.trim(),
           forLlmId: forLlm,
           againstLlmId: againstLlm,
-          status: 'active',
           createdAt: new Date(),
-          updatedAt: new Date(),
-          userId: session.user.id,
-          round: 1
+          userId: session.user.id
         }
       });
     } catch (error) {

@@ -19,7 +19,7 @@ export async function POST({ request }) {
       return json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { debateId, modelId } = await request.json();
+    const { debateId, modelId, content } = await request.json();
 
     const debate = await prisma.debate.findUnique({
       where: { id: debateId },
@@ -36,9 +36,39 @@ export async function POST({ request }) {
 
     const isForLlm = modelId === debate.forLlmId;
     const isAgainstLlm = modelId === debate.againstLlmId;
+    const isUserMessage = modelId === 'user';
 
-    if (!isForLlm && !isAgainstLlm) {
+    if (!isForLlm && !isAgainstLlm && !isUserMessage) {
       return json({ error: 'Invalid model for this debate' }, { status: 400 });
+    }
+
+    // Handle user messages separately
+    if (isUserMessage) {
+      if (!content) {
+        return json(
+          { error: 'Content required for user messages' },
+          { status: 400 }
+        );
+      }
+
+      // Save user message and update status to wait for FOR model
+      await prisma.$transaction([
+        prisma.debateMessage.create({
+          data: {
+            id: `user_${nanoid()}`,
+            content: content,
+            modelId: 'user',
+            debateId: debateId,
+            createdAt: new Date()
+          }
+        }),
+        prisma.debate.update({
+          where: { id: debateId },
+          data: { round_status: 'waiting_for_for' }
+        })
+      ]);
+
+      return json({ content });
     }
 
     const role = isForLlm ? 'FOR' : 'AGAINST';
@@ -59,6 +89,7 @@ export async function POST({ request }) {
     - Keep responses concise and impactful (aim for 2-3 paragraphs)
     - Build upon your previous arguments while responding to your opponent's points
 
+    If the user has provided their inputs, answer them in your response.
     Remember: You must argue ${role} the position regardless of your personal views. Make the strongest case possible for your assigned side.`;
 
     const messagesForApi = debate.messages.map((msg) => {
@@ -66,6 +97,11 @@ export async function POST({ request }) {
         return {
           role: 'assistant' as const,
           content: `[YOUR PREVIOUS ARGUMENT]: ${msg.content}`
+        };
+      } else if (msg.modelId === 'user') {
+        return {
+          role: 'user' as const,
+          content: `[USER INPUT]: ${msg.content}`
         };
       } else {
         return {
@@ -85,9 +121,7 @@ export async function POST({ request }) {
 
     const response = await groq.chat.completions.create({
       model: modelId,
-      messages: messages,
-      temperature: 0.7,
-      max_tokens: 1000
+      messages: messages
     });
 
     const generatedContent = response.choices[0].message.content;
@@ -96,23 +130,25 @@ export async function POST({ request }) {
       return json({ error: 'No response generated' }, { status: 500 });
     }
 
-    await prisma.debateMessage.create({
-      data: {
-        id: `${role.toLowerCase()}_${nanoid()}`,
-        content: generatedContent,
-        modelId: modelId,
-        debateId: debateId,
-        createdAt: new Date()
-      }
-    });
+    // Determine next status based on current model
+    const nextStatus = isForLlm ? 'waiting_for_against' : 'waiting_for_user';
 
-    await prisma.debate.update({
-      where: { id: debateId },
-      data: {
-        round: debate.round + 1,
-        updatedAt: new Date()
-      }
-    });
+    // Save LLM response and update debate status
+    await prisma.$transaction([
+      prisma.debateMessage.create({
+        data: {
+          id: `${role.toLowerCase()}_${nanoid()}`,
+          content: generatedContent,
+          modelId: modelId,
+          debateId: debateId,
+          createdAt: new Date()
+        }
+      }),
+      prisma.debate.update({
+        where: { id: debateId },
+        data: { round_status: nextStatus }
+      })
+    ]);
 
     return json({
       content: generatedContent
