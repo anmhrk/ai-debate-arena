@@ -18,7 +18,10 @@
     }
   };
 
-  const sendDebateRequest = async (modelId: string) => {
+  const sendDebateRequest = async (
+    modelId: string,
+    userContent: string | null = null
+  ) => {
     if (isLoading) return;
 
     isLoading = true;
@@ -32,7 +35,8 @@
         },
         body: JSON.stringify({
           debateId: debate.id,
-          modelId: modelId
+          modelId: modelId,
+          content: userContent
         })
       });
 
@@ -42,7 +46,6 @@
 
       const data = await response.json();
 
-      // Add the new message to local state
       const newMessage = {
         id: `${modelId === debate.forLlmId ? 'for' : 'against'}_${Date.now()}`,
         content: data.content,
@@ -54,12 +57,12 @@
       messages = [...messages, newMessage];
       scrollToBottom();
 
-      // Update local debate status based on which model responded
       if (modelId === debate.forLlmId) {
         debate.round_status = 'waiting_for_against';
         // Auto-send against response
         setTimeout(() => sendDebateRequest(debate.againstLlmId), 100);
       } else if (modelId === debate.againstLlmId) {
+        // Wait for user input or skip
         debate.round_status = 'waiting_for_user';
       }
     } catch (error) {
@@ -77,24 +80,6 @@
     inputValue = '';
 
     try {
-      // Save user message to database first
-      const response = await fetch('/api/debate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          debateId: debate.id,
-          modelId: 'user',
-          content: userContent
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to save user message');
-      }
-
-      // Add user message to local state
       const userMessage = {
         id: `user_${Date.now()}`,
         content: userContent,
@@ -106,12 +91,10 @@
       messages = [...messages, userMessage];
       scrollToBottom();
 
-      // Update local debate status and start next round with FOR model
       debate.round_status = 'waiting_for_for';
-      await sendDebateRequest(debate.forLlmId);
+      await sendDebateRequest(debate.forLlmId, userContent);
     } catch (error) {
       console.error('Error sending user message:', error);
-      // Restore input value on error
       inputValue = userContent;
     }
   };
@@ -119,15 +102,12 @@
   const skipRound = async () => {
     if (isLoading || debate.round_status !== 'waiting_for_user') return;
 
-    // Skip user input and start next round with FOR model
     await sendDebateRequest(debate.forLlmId);
   };
 
   const initializeDebate = async () => {
-    // Use the database status instead of calculating it
     const currentStatus = debate.round_status;
 
-    // Only auto-start if we're waiting for a model and not currently loading
     if (currentStatus === 'waiting_for_for' && !isLoading) {
       await sendDebateRequest(debate.forLlmId);
     } else if (currentStatus === 'waiting_for_against' && !isLoading) {
@@ -153,17 +133,17 @@
     if (isUserMessage) {
       containerClass += 'justify-center';
       messageClass +=
-        'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/50';
+        'border-green-200 bg-green-50 dark:border-green-800/40 dark:bg-green-900/20';
       nameClass += 'text-green-700 dark:text-green-400';
     } else if (isForMessage) {
       containerClass += 'justify-end';
       messageClass +=
-        'border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/50';
+        'border-blue-200 bg-blue-50 dark:border-blue-800/40 dark:bg-blue-900/20';
       nameClass += 'text-blue-700 dark:text-blue-400';
     } else {
       containerClass += 'justify-start';
       messageClass +=
-        'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/50';
+        'border-red-200 bg-red-50 dark:border-red-800/40 dark:bg-red-900/20';
       nameClass += 'text-red-700 dark:text-red-400';
     }
 
@@ -187,7 +167,7 @@
 </script>
 
 <div
-  class="flex h-[calc(100vh-12rem)] flex-col rounded-lg border border-border"
+  class="flex h-[calc(100vh-11rem)] flex-col rounded-lg border border-border"
 >
   <div
     bind:this={messagesContainer}
@@ -224,8 +204,8 @@
       <div class="flex {isForModel ? 'justify-end' : 'justify-start'}">
         <div
           class="max-w-[80%] rounded-lg border p-4 {isForModel
-            ? 'border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/50'
-            : 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/50'} opacity-60"
+            ? 'border-blue-200 bg-blue-50 dark:border-blue-800/40 dark:bg-blue-900/20'
+            : 'border-red-200 bg-red-50 dark:border-red-800/40 dark:bg-red-900/20'} opacity-60"
         >
           <div class="pb-2">
             <div class="flex items-center justify-between">
@@ -259,7 +239,7 @@
     <Input
       bind:value={inputValue}
       type="text"
-      placeholder="Type your message..."
+      placeholder="Type an argument to steer the debate or press the skip button"
       class="flex-1 !text-sm"
       onkeydown={handleKeydown}
       disabled={isLoading}

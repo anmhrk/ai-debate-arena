@@ -35,32 +35,19 @@ export async function POST({ request }) {
     }
 
     const isForLlm = modelId === debate.forLlmId;
-    const isAgainstLlm = modelId === debate.againstLlmId;
-    const isUserMessage = modelId === 'user';
+    let messages = debate.messages;
 
-    if (!isForLlm && !isAgainstLlm && !isUserMessage) {
-      return json({ error: 'Invalid model for this debate' }, { status: 400 });
-    }
-
-    // Handle user messages separately
-    if (isUserMessage) {
-      if (!content) {
-        return json(
-          { error: 'Content required for user messages' },
-          { status: 400 }
-        );
-      }
-
-      // Save user message and update status to wait for FOR model
+    if (content) {
+      const userMessage = {
+        id: `user_${nanoid()}`,
+        content: content,
+        modelId: 'user',
+        debateId: debateId,
+        createdAt: new Date()
+      };
       await prisma.$transaction([
         prisma.debateMessage.create({
-          data: {
-            id: `user_${nanoid()}`,
-            content: content,
-            modelId: 'user',
-            debateId: debateId,
-            createdAt: new Date()
-          }
+          data: userMessage
         }),
         prisma.debate.update({
           where: { id: debateId },
@@ -68,31 +55,30 @@ export async function POST({ request }) {
         })
       ]);
 
-      return json({ content });
+      messages = [...messages, userMessage];
     }
 
     const role = isForLlm ? 'FOR' : 'AGAINST';
     const opponentRole = isForLlm ? 'AGAINST' : 'FOR';
 
-    const systemPrompt = `You are an AI model participating in a structured debate about: "${debate.title}"
+    const systemPrompt = `Hey! You're having a friendly discussion about: "${debate.title}"
 
-    The debate prompt is: "${debate.prompt}"
+    Here's what you're talking about: "${debate.prompt}"
 
-    You are arguing ${role} this position. Your opponent is arguing ${opponentRole}.
+    You're on the ${role} side, and the other person is ${opponentRole}.
 
-    Your role is to:
-    - Present compelling arguments that support your assigned position
-    - Address counterarguments effectively
-    - Use logical reasoning and evidence
-    - Stay focused on the debate topic
-    - Be respectful but persuasive
-    - Keep responses concise and impactful (aim for 2-3 paragraphs)
-    - Build upon your previous arguments while responding to your opponent's points
+    Just chat naturally and share your thoughts on why you think the ${role} side makes sense. You can:
+    - Share your perspective and why you see it that way
+    - Respond to what the other person said
+    - Bring up interesting points or examples
+    - Keep it conversational and engaging
+    - Write like you're talking to a friend (2-3 paragraphs is perfect)
+    - Feel free to acknowledge good points while still making your case
 
-    If the user has provided their inputs, answer them in your response.
-    Remember: You must argue ${role} the position regardless of your personal views. Make the strongest case possible for your assigned side.`;
+    If the user adds their own thoughts, respond to them naturally.
+    Remember: You're representing the ${role} side in this chat, so focus on that perspective even if you might personally see it differently.`;
 
-    const messagesForApi = debate.messages.map((msg) => {
+    const messagesForApi = messages.map((msg) => {
       if (msg.modelId === modelId) {
         return {
           role: 'assistant' as const,
@@ -111,7 +97,7 @@ export async function POST({ request }) {
       }
     });
 
-    const messages = [
+    const messagesToSend = [
       {
         role: 'system' as const,
         content: systemPrompt
@@ -121,7 +107,7 @@ export async function POST({ request }) {
 
     const response = await groq.chat.completions.create({
       model: modelId,
-      messages: messages
+      messages: messagesToSend
     });
 
     const generatedContent = response.choices[0].message.content;
@@ -130,10 +116,8 @@ export async function POST({ request }) {
       return json({ error: 'No response generated' }, { status: 500 });
     }
 
-    // Determine next status based on current model
     const nextStatus = isForLlm ? 'waiting_for_against' : 'waiting_for_user';
 
-    // Save LLM response and update debate status
     await prisma.$transaction([
       prisma.debateMessage.create({
         data: {

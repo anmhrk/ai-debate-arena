@@ -4,13 +4,6 @@
   let { data } = $props();
   let debate = $state(data.debate);
   let messages = $state(data.debate.messages || []);
-
-  $effect(() => {
-    if (data.debate) {
-      debate = data.debate;
-      messages = data.debate.messages || [];
-    }
-  });
 </script>
 
 <div class="flex flex-1 flex-col p-4">

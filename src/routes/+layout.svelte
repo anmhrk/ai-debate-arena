@@ -83,13 +83,4 @@
   </header>
 
   {@render children()}
-
-  <footer class="w-full p-2 text-center text-sm text-muted-foreground">
-    made by <a
-      href="https://x.com/anmhrk"
-      target="_blank"
-      rel="noopener noreferrer"
-      class="text-primary transition-colors duration-200">@anmhrk</a
-    >
-  </footer>
 </div>
