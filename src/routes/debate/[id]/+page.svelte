@@ -1,26 +1,16 @@
 <script lang="ts">
+  import DebateMessages from '$lib/components/debate-messages.svelte';
   import * as Card from '$lib/components/ui/card/index.js';
   import { Input } from '$lib/components/ui/input/index.js';
   import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
-  import { Chat } from '@ai-sdk/svelte';
-  import { onMount } from 'svelte';
+
+  let inputValue = $state('');
 
   let { data } = $props();
   let debate = $derived(data.debate);
-
-  let inputValue = $state('');
-  const chat = new Chat({
-    // messages: debate.messages
-  });
-
-  function handleSubmit(event: SubmitEvent) {
-    event.preventDefault();
-    chat.sendMessage({ text: inputValue });
-    inputValue = '';
-  }
 </script>
 
-<div class="flex flex-1 flex-col p-4 sm:p-6 lg:p-8">
+<div class="flex flex-1 flex-col p-4 md:p-8">
   <div class="mx-auto flex w-full max-w-6xl flex-1 flex-col space-y-8">
     <div class="flex items-center justify-between">
       <h1 class="text-2xl font-semibold text-foreground sm:text-3xl">
@@ -40,7 +30,9 @@
         </Card.Title>
       </Card.Header>
       <Card.Content class="flex-1 p-6">
-        <ScrollArea class="h-full"></ScrollArea>
+        <ScrollArea class="h-full">
+          <DebateMessages />
+        </ScrollArea>
       </Card.Content>
       <Card.Footer class="border-t border-border">
         <Input
