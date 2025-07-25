@@ -9,6 +9,45 @@ const groq = new Groq({
   apiKey: GROQ_API_KEY
 });
 
+export async function GET({ url, request }) {
+  try {
+    const session = await auth.api.getSession({
+      headers: request.headers
+    });
+
+    if (!session?.user) {
+      return json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const debateId = url.searchParams.get('id');
+
+    if (!debateId) {
+      return json({ error: 'Debate ID is required' }, { status: 400 });
+    }
+
+    const debate = await prisma.debate.findUnique({
+      where: {
+        id: debateId,
+        userId: session.user.id
+      },
+      include: {
+        messages: {
+          orderBy: { createdAt: 'asc' }
+        }
+      }
+    });
+
+    if (!debate) {
+      return json({ error: 'Debate not found' }, { status: 404 });
+    }
+
+    return json({ debate });
+  } catch (error) {
+    console.error('Debate fetch error:', error);
+    return json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
 export async function POST({ request }) {
   try {
     const session = await auth.api.getSession({
