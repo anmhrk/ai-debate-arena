@@ -55,7 +55,7 @@
 </script>
 
 <div
-  class="flex h-[calc(100vh-11rem)] flex-col rounded-lg border border-border"
+  class="flex h-[calc(100vh-11rem)] flex-col rounded-lg border border-border bg-card/50"
 >
   <div
     bind:this={messagesContainer}

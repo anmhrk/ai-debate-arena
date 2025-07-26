@@ -7,8 +7,15 @@ A simple app to let LLMs debate on any topic and get for and against arguments. 
 1. Enter a topic you want the models to debate on
 2. Choose your models and start
 3. For and against models will auto fire off
-4. You can add your own arguments to steer the debate or press the skip button to let the models continue
-5. This loop continues
+4. Click continue to start another round
+
+## Setup
+
+1. Clone the repo
+2. Copy `.env.example` to `.env` and fill in the values
+3. Run `bun install` to install dependencies
+4. Run `bun dev` to start the dev server
+5. Go to `http://localhost:5173` and see the live app
 
 ## Tech stack
 

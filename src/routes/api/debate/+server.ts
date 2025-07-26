@@ -89,7 +89,8 @@ export async function POST({ request }) {
     const role = isForLlm ? 'FOR' : 'AGAINST';
     const opponentRole = isForLlm ? 'AGAINST' : 'FOR';
 
-    const systemPrompt = `You're having a friendly discussion about: "${debate.title}"
+    const systemPrompt = `
+    You're having a friendly discussion about: "${debate.title}"
 
     Here's what you're talking about: "${debate.prompt}"
 

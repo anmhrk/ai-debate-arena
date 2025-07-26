@@ -35,10 +35,10 @@
     if (!debate) return;
 
     const currentStatus = debate.round_status;
-    
+
     if (currentStatus !== localRoundStatus) {
       localRoundStatus = currentStatus;
-      
+
       if (currentStatus === 'waiting_for_for') {
         sendDebateRequest(debate.forLlmId);
       } else if (currentStatus === 'waiting_for_against') {
@@ -69,6 +69,7 @@
         throw new Error('Failed to get response');
       }
 
+      // Refetch to update UI and state
       await $debateQuery.refetch();
     } catch (error) {
       console.error('Error sending debate request:', error);
