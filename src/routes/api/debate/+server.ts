@@ -58,7 +58,7 @@ export async function POST({ request }) {
       return json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { debateId, modelId, content } = await request.json();
+    const { debateId, modelId } = await request.json();
 
     const debate = await prisma.debate.findUnique({
       where: { id: debateId },
@@ -73,34 +73,23 @@ export async function POST({ request }) {
       return json({ error: 'Debate not found' }, { status: 404 });
     }
 
-    const isForLlm = modelId === debate.forLlmId;
-    let messages = debate.messages;
-
-    if (content) {
-      const userMessage = {
-        id: `user_${nanoid()}`,
-        content: content,
-        modelId: 'user',
-        debateId: debateId,
-        createdAt: new Date()
-      };
-      await prisma.$transaction([
-        prisma.debateMessage.create({
-          data: userMessage
-        }),
-        prisma.debate.update({
-          where: { id: debateId },
-          data: { round_status: 'waiting_for_for' }
-        })
-      ]);
-
-      messages = [...messages, userMessage];
+    // Continue was hit
+    if (debate.round_status === 'waiting_for_user') {
+      await prisma.debate.update({
+        where: { id: debateId },
+        data: {
+          round_status: 'waiting_for_for',
+          current_round: debate.current_round + 1
+        }
+      });
     }
+
+    const isForLlm = modelId === debate.forLlmId;
 
     const role = isForLlm ? 'FOR' : 'AGAINST';
     const opponentRole = isForLlm ? 'AGAINST' : 'FOR';
 
-    const systemPrompt = `Hey! You're having a friendly discussion about: "${debate.title}"
+    const systemPrompt = `You're having a friendly discussion about: "${debate.title}"
 
     Here's what you're talking about: "${debate.prompt}"
 
@@ -114,19 +103,13 @@ export async function POST({ request }) {
     - Write like you're talking to a friend (2-3 paragraphs is perfect)
     - Feel free to acknowledge good points while still making your case
 
-    If the user adds their own thoughts, respond to them naturally.
     Remember: You're representing the ${role} side in this chat, so focus on that perspective even if you might personally see it differently.`;
 
-    const messagesForApi = messages.map((msg) => {
+    const messagesForApi = debate.messages.map((msg) => {
       if (msg.modelId === modelId) {
         return {
           role: 'assistant' as const,
           content: `[YOUR PREVIOUS ARGUMENT]: ${msg.content}`
-        };
-      } else if (msg.modelId === 'user') {
-        return {
-          role: 'user' as const,
-          content: `[USER INPUT]: ${msg.content}`
         };
       } else {
         return {

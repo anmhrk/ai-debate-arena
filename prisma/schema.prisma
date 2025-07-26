@@ -76,16 +76,17 @@ enum RoundStatus {
 }
 
 model Debate {
-  id           String          @id
-  createdAt    DateTime
-  title        String
-  prompt       String
-  round_status RoundStatus     @default(waiting_for_for)
-  forLlmId     String
-  againstLlmId String
-  userId       String
-  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  messages     DebateMessage[]
+  id            String          @id
+  createdAt     DateTime
+  title         String
+  prompt        String
+  round_status  RoundStatus     @default(waiting_for_for)
+  current_round Int             @default(1)
+  forLlmId      String
+  againstLlmId  String
+  userId        String
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages      DebateMessage[]
 
   @@map("debate")
 }
